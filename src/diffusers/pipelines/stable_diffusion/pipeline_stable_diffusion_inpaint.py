@@ -879,6 +879,9 @@ class StableDiffusionInpaintPipeline(
         eta: float = 0.0,
         generator: Optional[Union[torch.Generator, List[torch.Generator]]] = None,
         latents: Optional[torch.Tensor] = None,
+        noisy_latents: Optional[torch.Tensor] = None,
+        true_latents: Optional[torch.Tensor] = None,
+        noise: Optional[torch.Tensor] = None,
         prompt_embeds: Optional[torch.Tensor] = None,
         negative_prompt_embeds: Optional[torch.Tensor] = None,
         ip_adapter_image: Optional[PipelineImageInput] = None,
@@ -1155,26 +1158,32 @@ class StableDiffusionInpaintPipeline(
         num_channels_unet = self.unet.config.in_channels
         return_image_latents = num_channels_unet == 4
 
-        latents_outputs = self.prepare_latents(
-            batch_size * num_images_per_prompt,
-            num_channels_latents,
-            height,
-            width,
-            prompt_embeds.dtype,
-            device,
-            generator,
-            latents,
-            image=init_image,
-            timestep=latent_timestep,
-            is_strength_max=is_strength_max,
-            return_noise=True,
-            return_image_latents=return_image_latents,
-        )
+        if true_latents is None:
 
-        if return_image_latents:
-            latents, noise, image_latents = latents_outputs
+            latents_outputs = self.prepare_latents(
+                batch_size * num_images_per_prompt,
+                num_channels_latents,
+                height,
+                width,
+                prompt_embeds.dtype,
+                device,
+                generator,
+                latents,
+                image=init_image,
+                timestep=latent_timestep,
+                is_strength_max=is_strength_max,
+                return_noise=True,
+                return_image_latents=return_image_latents,
+            )
+
+            if return_image_latents:
+                latents, noise, image_latents = latents_outputs
+            else:
+                latents, noise = latents_outputs
+        
         else:
-            latents, noise = latents_outputs
+            image_latents = true_latents
+            latents = noisy_latents
 
         # 7. Prepare mask latent variables
         mask_condition = self.mask_processor.preprocess(
@@ -1194,9 +1203,9 @@ class StableDiffusionInpaintPipeline(
             width,
             prompt_embeds.dtype,
             device,
-            generator,
+            torch.Generator(device="cuda").manual_seed(0),
             self.do_classifier_free_guidance,
-        )
+        ) #Making generation of masked latents deterministic even outside of the pipeline
 
         # 8. Check that sizes of mask, masked image and latents match
         if num_channels_unet == 9:
