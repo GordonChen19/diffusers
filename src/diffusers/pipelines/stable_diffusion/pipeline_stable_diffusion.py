@@ -761,6 +761,9 @@ class StableDiffusionPipeline(
         eta: float = 0.0,
         generator: Optional[Union[torch.Generator, List[torch.Generator]]] = None,
         latents: Optional[torch.Tensor] = None,
+        true_latents: Optional[torch.Tensor] = None,
+        true_noise: Optional[torch.Tensor] = None,
+        mask: Optional[torch.Tensor] = None,
         prompt_embeds: Optional[torch.Tensor] = None,
         negative_prompt_embeds: Optional[torch.Tensor] = None,
         ip_adapter_image: Optional[PipelineImageInput] = None,
@@ -1019,6 +1022,17 @@ class StableDiffusionPipeline(
                 # compute the previous noisy sample x_t -> x_t-1
                 latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs, return_dict=False)[0]
 
+
+
+                ############################
+                if i<len(timesteps) - 1:
+                    noise_timestep = timesteps[i+1]
+                    init_latents_proper = self.scheduler.add_noise(
+                        true_latents, true_noise, torch.tensor([noise_timestep]))
+
+                    latents = (1- mask) * latents  + mask * init_latents_proper
+
+                ############################
                 if callback_on_step_end is not None:
                     callback_kwargs = {}
                     for k in callback_on_step_end_tensor_inputs:
