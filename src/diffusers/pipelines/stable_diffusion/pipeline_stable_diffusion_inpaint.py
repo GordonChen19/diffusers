@@ -707,11 +707,11 @@ class StableDiffusionInpaintPipeline(
             if image.shape[1] == 4:
                 image_latents = image
             else:
-                image_latents = self._encode_vae_image(image=image, generator=generator)
+                image_latents = self._encode_vae_image(image=image, generator=torch.Generator(device="cuda").manual_seed(42).detach())
             image_latents = image_latents.repeat(batch_size // image_latents.shape[0], 1, 1, 1)
 
         if latents is None:
-            noise = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
+            noise = randn_tensor(shape, generator=torch.Generator(device="cuda").manual_seed(42).detach(), device=device, dtype=dtype)
             # if strength is 1. then initialise the latents to noise, else initial to image + noise
             latents = noise if is_strength_max else self.scheduler.add_noise(image_latents, noise, timestep)
             # if pure noise then scale the initial latents by the  Scheduler's init sigma
@@ -1194,7 +1194,7 @@ class StableDiffusionInpaintPipeline(
             width,
             prompt_embeds.dtype,
             device,
-            generator,
+            torch.Generator(device="cuda").manual_seed(42).detach(),
             self.do_classifier_free_guidance,
         )
 
