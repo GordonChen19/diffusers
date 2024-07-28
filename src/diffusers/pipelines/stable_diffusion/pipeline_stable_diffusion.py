@@ -1063,7 +1063,7 @@ class StableDiffusionPipeline(
 
 
     @torch.no_grad()
-    #Added true latent and mask 
+    #Added target latent and mask 
     @replace_example_docstring(EXAMPLE_DOC_STRING)
     def inpaint(
         self,
@@ -1078,7 +1078,7 @@ class StableDiffusionPipeline(
         num_images_per_prompt: Optional[int] = 1,
         eta: float = 0.0,
         generator: Optional[Union[torch.Generator, List[torch.Generator]]] = None,
-        true_latent: Optional[torch.Tensor] = None,
+        target_latent: Optional[torch.Tensor] = None,
         latents: Optional[torch.Tensor] = None,
         mask: Optional[torch.Tensor] = None,
         prompt_embeds: Optional[torch.Tensor] = None,
@@ -1347,7 +1347,7 @@ class StableDiffusionPipeline(
                 if i<len(timesteps) - 1:
                     noise_timestep = timesteps[i+1]
                     init_latents_proper = self.scheduler.add_noise(
-                        true_latent, noise, torch.tensor([noise_timestep]))
+                        target_latent, noise, torch.tensor([noise_timestep]))
 
                     latents = (1- mask) * latents  + mask * init_latents_proper
 
