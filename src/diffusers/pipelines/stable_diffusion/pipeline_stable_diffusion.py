@@ -1063,6 +1063,7 @@ class StableDiffusionPipeline(
 
 
     @torch.no_grad()
+    #Added true latent and mask 
     @replace_example_docstring(EXAMPLE_DOC_STRING)
     def inpaint(
         self,
@@ -1078,7 +1079,6 @@ class StableDiffusionPipeline(
         eta: float = 0.0,
         generator: Optional[Union[torch.Generator, List[torch.Generator]]] = None,
         true_latent: Optional[torch.Tensor] = None,
-        true_noise: Optional[torch.Tensor] = None,
         latents: Optional[torch.Tensor] = None,
         mask: Optional[torch.Tensor] = None,
         prompt_embeds: Optional[torch.Tensor] = None,
@@ -1275,20 +1275,18 @@ class StableDiffusionPipeline(
 
         # 5. Prepare latent variables
         num_channels_latents = self.unet.config.in_channels
-        if true_noise is None:
-            latents, noise = self.prepare_latents(
-                batch_size * num_images_per_prompt,
-                num_channels_latents,
-                height,
-                width,
-                prompt_embeds.dtype,
-                device,
-                generator,
-                latents,
-            )
-        else:
-            latents = true_noise
-            noise = true_noise
+        
+        latents, noise = self.prepare_latents(
+            batch_size * num_images_per_prompt,
+            num_channels_latents,
+            height,
+            width,
+            prompt_embeds.dtype,
+            device,
+            generator,
+            latents,
+        )
+
 
         # 6. Prepare extra step kwargs. TODO: Logic should ideally just be moved out of the pipeline
         extra_step_kwargs = self.prepare_extra_step_kwargs(generator, eta)
@@ -1344,7 +1342,7 @@ class StableDiffusionPipeline(
                 latents = self.scheduler.step(noise_pred, t, latents, **extra_step_kwargs, return_dict=False)[0]
 
 
-
+                #Inpaint noisy masked region
                 ############################
                 if i<len(timesteps) - 1:
                     noise_timestep = timesteps[i+1]
