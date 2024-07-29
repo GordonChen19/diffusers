@@ -678,6 +678,7 @@ class StableDiffusionPipeline(
             noise = randn_tensor(shape, generator=generator, device=device, dtype=dtype)
             latents = noise.clone()
         else:
+            noise = latents.clone()
             latents = latents.to(device)
 
         # scale the initial noise by the standard deviation required by the scheduler
