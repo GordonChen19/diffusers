@@ -761,6 +761,7 @@ class StableDiffusionPipeline(
         num_images_per_prompt: Optional[int] = 1,
         eta: float = 0.0,
         latents: Optional[torch.Tensor] = None,
+        sample_noise: Optional[torch.Tensor] = None,
         generator: Optional[Union[torch.Generator, List[torch.Generator]]] = None,
         prompt_embeds: Optional[torch.Tensor] = None,
         negative_prompt_embeds: Optional[torch.Tensor] = None,
@@ -964,7 +965,7 @@ class StableDiffusionPipeline(
             prompt_embeds.dtype,
             device,
             generator,
-            latents,
+            latents = sample_noise if sample_noise is not None else latents
         )
 
         # 6. Prepare extra step kwargs. TODO: Logic should ideally just be moved out of the pipeline
